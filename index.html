@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Models as Insider Risks — in the Super Intelligence Era</title>
+<style>
+  :root{
+    --paper:#f3efe4;
+    --ink:#1b1a17;
+    --ink-soft:#4a473e;
+    --red:#d8381f;
+    --teal:#1f4d57;
+    --gold:#c98a1a;
+    --rule: rgba(27,26,23,0.18);
+  }
+
+  *{box-sizing:border-box;}
+
+  html,body{
+    margin:0;
+    padding:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family: Georgia, 'Times New Roman', serif;
+  }
+
+  body{
+    background-image:
+      linear-gradient(var(--rule) 1px, transparent 1px),
+      linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+    background-size: 28px 28px;
+    background-position: center top;
+  }
+
+  .mono{
+    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+
+  header.page{
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 48px 24px 16px;
+    text-align: center;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  header.page .kicker{
+    font-family: ui-monospace, Menlo, monospace;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin: 0 0 14px;
+  }
+
+  header.page h1{
+    font-size: clamp(28px, 4.4vw, 46px);
+    line-height: 1.15;
+    margin: 0 0 14px;
+  }
+
+  header.page p.sub{
+    font-size: 17px;
+    color: var(--ink-soft);
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  /* ---------- Stage ---------- */
+
+  .stage-wrap{
+    max-width: 1100px;
+    margin: 28px auto 0;
+    padding: 0 24px;
+  }
+
+  .stage{
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    min-height: 420px;
+    border: 1px solid var(--rule);
+    background: repeating-linear-gradient(
+        0deg, transparent, transparent 27px, var(--rule) 28px
+      ),
+      repeating-linear-gradient(
+        90deg, transparent, transparent 27px, var(--rule) 28px
+      );
+    overflow: hidden;
+  }
+
+  .stage canvas{
+    display:block;
+    width:100%;
+    height:100%;
+  }
+
+  .stage-frame-label{
+    position:absolute;
+    top:10px; left:12px;
+    font-size:11px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color: var(--ink-soft);
+    pointer-events:none;
+  }
+
+  .status-readout{
+    position:absolute;
+    top:10px; right:12px;
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-align:right;
+    pointer-events:none;
+  }
+  .status-readout .status-val{
+    color: var(--red);
+    font-weight: 700;
+  }
+  .status-readout.contained .status-val{ color: var(--teal); }
+  .status-readout.halted .status-val{ color: var(--ink); }
+
+  /* HTML labels projected from 3D */
+  .label3d{
+    position:absolute;
+    transform: translate(-50%, -100%);
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    padding: 2px 6px;
+    background: var(--paper);
+    border: 1px solid var(--ink);
+    white-space: nowrap;
+    pointer-events:none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  .label3d.visible{ opacity: 1; }
+  .label3d.control{
+    border-color: var(--gold);
+    color: var(--teal);
+    font-weight: 700;
+  }
+  .label3d.data{
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  .overlay-flash{
+    position:absolute;
+    inset:0;
+    background: var(--paper);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: clamp(28px, 6vw, 56px);
+    letter-spacing: 0.1em;
+    color: var(--teal);
+    border: 6px solid var(--teal);
+    opacity:0;
+    pointer-events:none;
+  }
+  .overlay-flash.active{
+    animation: flashPulse 1.1s ease-out 1;
+  }
+  @keyframes flashPulse{
+    0%{ opacity:0; }
+    12%{ opacity:1; }
+    70%{ opacity:1; }
+    100%{ opacity:0; }
+  }
+
+  /* ---------- Controls ---------- */
+
+  .controls{
+    max-width: 1100px;
+    margin: 18px auto 0;
+    padding: 0 24px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+  }
+
+  button{
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 10px 16px;
+    background: transparent;
+    border: 1.5px solid var(--ink);
+    color: var(--ink);
+    cursor:pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  button:hover{ background: var(--ink); color: var(--paper); }
+  button.active{ background: var(--ink); color: var(--paper); }
+
+  button.mode-1.active{ background: var(--red); border-color: var(--red); color: var(--paper); }
+  button.mode-2.active{ background: var(--ink-soft); border-color: var(--ink-soft); color: var(--paper); }
+  button.mode-3.active{ background: var(--teal); border-color: var(--teal); color: var(--paper); }
+
+  button.killswitch{
+    margin-left:auto;
+    border-color: var(--red);
+    color: var(--red);
+    font-weight:700;
+  }
+  button.killswitch:hover{ background: var(--red); color: var(--paper); }
+
+  /* ---------- Content ---------- */
+
+  main.content{
+    max-width: 780px;
+    margin: 56px auto 0;
+    padding: 0 24px;
+  }
+
+  main.content h2{
+    font-size: 24px;
+    margin: 0 0 14px;
+  }
+
+  main.content p.dek{
+    font-size: 18px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+
+  main.content p.dek strong{ color: var(--ink); }
+
+  .principles{
+    max-width: 1100px;
+    margin: 40px auto 0;
+    padding: 0 24px;
+  }
+
+  .principles h2{
+    text-align:center;
+    font-size:22px;
+    margin-bottom: 28px;
+  }
+
+  .principles-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+
+  .principle-card{
+    background: var(--paper);
+    padding: 20px 18px;
+  }
+
+  .principle-card .num{
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 12px;
+    color: var(--gold);
+    font-weight:700;
+    letter-spacing: 0.08em;
+  }
+
+  .principle-card h3{
+    font-size: 16px;
+    margin: 6px 0 8px;
+  }
+
+  .principle-card p{
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    margin:0;
+  }
+
+  .closing{
+    max-width: 780px;
+    margin: 56px auto 0;
+    padding: 36px 24px 64px;
+    text-align:center;
+    border-top: 1px solid var(--rule);
+  }
+
+  .closing blockquote{
+    font-size: clamp(20px, 3vw, 28px);
+    line-height: 1.45;
+    margin: 0 0 18px;
+    font-style: italic;
+  }
+
+  .closing cite{
+    font-style:normal;
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+
+  .closing a{
+    color: var(--teal);
+  }
+
+  footer.page{
+    text-align:center;
+    padding: 20px 24px 40px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-family: ui-monospace, Menlo, monospace;
+  }
+
+  @media print{
+    body{ background-image:none; }
+    .controls, .label3d, .overlay-flash{ display:none !important; }
+    .stage{ aspect-ratio: 16/9; min-height: 0; border-color:#000; }
+    button{ display:none; }
+    * { color:#000 !important; }
+    .principles-grid{ border-color:#000; background:#000; }
+    .principle-card{ break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <p class="kicker mono">Visual essay · AI governance</p>
+  <h1>Models as Insider Risks<br/>in the Super Intelligence Era</h1>
+  <p class="sub">Don't trust the model. Build a system where you don't have to.</p>
+</header>
+
+<div class="stage-wrap">
+  <div class="stage" id="stage">
+    <div class="stage-frame-label mono">FIG. 1 — THE MODEL</div>
+    <div class="status-readout mono" id="statusReadout">
+      MODE <span id="statusMode">01</span><br/>
+      <span class="status-val" id="statusVal">UNCONTAINED</span>
+    </div>
+    <div class="overlay-flash mono" id="overlayFlash">CONTAINED</div>
+    <!-- 3D canvas injected here -->
+    <!-- labels injected here -->
+  </div>
+</div>
+
+<div class="controls">
+  <button class="mode-1 active" data-mode="1" id="btnMode1">Deploy &amp; trust</button>
+  <button class="mode-2" data-mode="2" id="btnMode2">Nested black boxes</button>
+  <button class="mode-3" data-mode="3" id="btnMode3">Contained system</button>
+  <button class="killswitch" id="btnKill">Pull the emergency brake</button>
+</div>
+
+<main class="content">
+  <h2>You can't read a frontier model like a stack trace.</h2>
+  <p class="dek">
+    With old software, any behavior could be traced back to a line of code someone
+    wrote and could explain. Frontier models don't work that way — their internal
+    reasoning is largely opaque even to the people who trained them. <strong>And yet
+    we hand these systems our sensitive data and let them take actions on our
+    behalf.</strong> The only sane response is to treat every model like an insider
+    risk: a powerful actor you can't fully audit from the inside, so you put the
+    controls <strong>outside</strong> the model instead of trusting what's inside it.
+  </p>
+</main>
+
+<section class="principles">
+  <h2>Seven principles for observable, containable AI</h2>
+  <div class="principles-grid">
+    <div class="principle-card">
+      <div class="num mono">01</div>
+      <h3>Model diversity</h3>
+      <p>No model is the sole dependency, and no model verifies its own work.</p>
+    </div>
+    <div class="principle-card">
+      <div class="num mono">02</div>
+      <h3>Observe everything</h3>
+      <p>Every action leaves tamper-proof, human-readable evidence. If it can't be observed, it can't be trusted.</p>
+    </div>
+    <div class="principle-card">
+      <div class="num mono">03</div>
+      <h3>Verifiability</h3>
+      <p>Continuously test the whole system — including its failures and the attacks against it.</p>
+    </div>
+    <div class="principle-card">
+      <div class="num mono">04</div>
+      <h3>Independent controls</h3>
+      <p>Organizations independently decide what a model can access and what it's allowed to do.</p>
+    </div>
+    <div class="principle-card">
+      <div class="num mono">05</div>
+      <h3>Independent auditability</h3>
+      <p>The validator can't be the model.</p>
+    </div>
+    <div class="principle-card">
+      <div class="num mono">06</div>
+      <h3>Containment</h3>
+      <p>Assume compromise. An authorized human can pause or shut it down mid-task.</p>
+    </div>
+    <div class="principle-card">
+      <div class="num mono">07</div>
+      <h3>Incident disclosure</h3>
+      <p>Disclose failures quickly and share learnings industrywide.</p>
+    </div>
+  </div>
+</section>
+
+<section class="closing">
+  <blockquote>
+    "The most trustworthy system won't be the one with the model we trust most.
+    It will be the one that lets us trust the model the least."
+  </blockquote>
+  <cite>
+    — Satya Nadella ·
+    <a href="https://x.com/satyanadella/status/2108931348857827686" target="_blank" rel="noopener">
+      x.com/satyanadella/status/2108931348857827686
+    </a>
+  </cite>
+</section>
+
+<footer class="page">Rendered with Three.js — open this file directly, no build step.</footer>
+
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+
+/* ===================== Ashima 3D simplex noise (GLSL) ===================== */
+const SNOISE_GLSL = `
+vec3 mod289(vec3 x){ return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec4 mod289(vec4 x){ return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec4 permute(vec4 x){ return mod289(((x*34.0)+1.0)*x); }
+vec4 taylorInvSqrt(vec4 r){ return 1.79284291400159 - 0.85373472095314 * r; }
+
+float snoise(vec3 v){
+  const vec2 C = vec2(1.0/6.0, 1.0/3.0);
+  const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+
+  vec3 i  = floor(v + dot(v, C.yyy));
+  vec3 x0 = v - i + dot(i, C.xxx);
+
+  vec3 g = step(x0.yzx, x0.xyz);
+  vec3 l = 1.0 - g;
+  vec3 i1 = min(g.xyz, l.zxy);
+  vec3 i2 = max(g.xyz, l.zxy);
+
+  vec3 x1 = x0 - i1 + C.xxx;
+  vec3 x2 = x0 - i2 + C.yyy;
+  vec3 x3 = x0 - D.yyy;
+
+  i = mod289(i);
+  vec4 p = permute( permute( permute(
+            i.z + vec4(0.0, i1.z, i2.z, 1.0))
+          + i.y + vec4(0.0, i1.y, i2.y, 1.0))
+          + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+
+  float n_ = 0.142857142857;
+  vec3 ns = n_ * D.wyz - D.xzx;
+
+  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+
+  vec4 x_ = floor(j * ns.z);
+  vec4 y_ = floor(j - 7.0 * x_);
+
+  vec4 x = x_ *ns.x + ns.yyyy;
+  vec4 y = y_ *ns.x + ns.yyyy;
+  vec4 h = 1.0 - abs(x) - abs(y);
+
+  vec4 b0 = vec4(x.xy, y.xy);
+  vec4 b1 = vec4(x.zw, y.zw);
+
+  vec4 s0 = floor(b0)*2.0 + 1.0;
+  vec4 s1 = floor(b1)*2.0 + 1.0;
+  vec4 sh = -step(h, vec4(0.0));
+
+  vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
+  vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+
+  vec3 p0 = vec3(a0.xy, h.x);
+  vec3 p1 = vec3(a0.zw, h.y);
+  vec3 p2 = vec3(a1.xy, h.z);
+  vec3 p3 = vec3(a1.zw, h.w);
+
+  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2,p2), dot(p3,p3)));
+  p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+
+  vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+  m = m * m;
+  return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
+}
+`;
+
+/* ===================== Scene bootstrap ===================== */
+const stage = document.getElementById('stage');
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+camera.position.set(0, 0.4, 7.2);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setClearColor(0x000000, 0);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+stage.appendChild(renderer.domElement);
+
+const rig = new THREE.Group();
+scene.add(rig);
+
+const hemi = new THREE.HemisphereLight(0xffffff, 0x2b2a24, 1.1);
+scene.add(hemi);
+const key = new THREE.DirectionalLight(0xffffff, 0.6);
+key.position.set(3, 4, 5);
+scene.add(key);
+
+/* ---------- Core (the model) ---------- */
+const coreGeo = new THREE.IcosahedronGeometry(1.25, 6);
+
+const coreMat = new THREE.ShaderMaterial({
+  uniforms: {
+    uTime:   { value: 0 },
+    uAmp:    { value: 1.6 },
+    uCore:   { value: new THREE.Color(0xd8381f) },
+    uRim:    { value: new THREE.Color(0xff8a6b) },
+  },
+  vertexShader: `
+    uniform float uTime;
+    uniform float uAmp;
+    varying float vNoise;
+    varying vec3 vNormalW;
+    varying vec3 vViewPos;
+
+    ${SNOISE_GLSL}
+
+    void main(){
+      vec3 p = position;
+      float n = snoise(normal * 1.6 + vec3(0.0, 0.0, uTime * 0.35));
+      n += 0.5 * snoise(normal * 3.2 + vec3(uTime * 0.6, 0.0, 0.0));
+      float disp = n * uAmp * 0.18;
+      vec3 displaced = p + normal * disp;
+
+      vNoise = n;
+      vec4 worldPos = modelMatrix * vec4(displaced, 1.0);
+      vNormalW = normalize(mat3(modelMatrix) * normal);
+      vec4 viewPos = viewMatrix * worldPos;
+      vViewPos = viewPos.xyz;
+
+      gl_Position = projectionMatrix * viewPos;
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 uCore;
+    uniform vec3 uRim;
+    varying float vNoise;
+    varying vec3 vNormalW;
+    varying vec3 vViewPos;
+
+    void main(){
+      vec3 viewDir = normalize(-vViewPos);
+      float fresnel = pow(1.0 - max(dot(normalize(vNormalW), viewDir), 0.0), 2.2);
+      float tone = clamp(0.5 + vNoise * 0.5, 0.0, 1.0);
+      vec3 base = mix(uCore * 0.55, uCore * 1.25, tone);
+      vec3 color = mix(base, uRim, fresnel * 0.85);
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `
+});
+
+const core = new THREE.Mesh(coreGeo, coreMat);
+rig.add(core);
+
+/* ---------- Mode 1: tendrils to sensitive data nodes ---------- */
+const DATA_LABELS = [
+  "CUSTOMER PII", "FINANCIAL RECORDS", "CREDENTIALS",
+  "SOURCE CODE", "MEDICAL RECORDS", "LEGAL DOCS", "INFRA ACCESS"
+];
+
+const tendrilGroup = new THREE.Group();
+const tendrilMat = new THREE.LineBasicMaterial({ color: 0xd8381f, transparent: true, opacity: 0 });
+const dataNodeMat = new THREE.MeshBasicMaterial({ color: 0xd8381f, transparent: true, opacity: 0 });
+const dataNodes = [];
+
+for (let i = 0; i < 7; i++) {
+  const phi = Math.acos(1 - 2 * (i + 0.5) / 7);
+  const theta = Math.PI * (1 + Math.sqrt(5)) * i;
+  const dir = new THREE.Vector3(
+    Math.sin(phi) * Math.cos(theta),
+    Math.sin(phi) * Math.sin(theta),
+    Math.cos(phi)
+  );
+  const end = dir.clone().multiplyScalar(3.1);
+
+  const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), end]);
+  const line = new THREE.Line(lineGeo, tendrilMat);
+  tendrilGroup.add(line);
+
+  const nodeGeo = new THREE.SphereGeometry(0.07, 12, 12);
+  const node = new THREE.Mesh(nodeGeo, dataNodeMat);
+  node.position.copy(end);
+  tendrilGroup.add(node);
+
+  dataNodes.push({ mesh: node, label: DATA_LABELS[i], el: makeLabel(DATA_LABELS[i], 'data') });
+}
+rig.add(tendrilGroup);
+
+/* ---------- Mode 2: nested black boxes ---------- */
+const boxGroup = new THREE.Group();
+const boxMat = new THREE.MeshBasicMaterial({ color: 0x6b6558, wireframe: true, transparent: true, opacity: 0 });
+const boxMeshes = [];
+[2.0, 2.5, 3.0].forEach((size, i) => {
+  const geo = new THREE.BoxGeometry(size, size, size);
+  const mesh = new THREE.Mesh(geo, boxMat);
+  boxGroup.add(mesh);
+  boxMeshes.push({ mesh, speed: 0.08 + i * 0.05, axis: new THREE.Vector3(0.3 + i*0.2, 1, 0.2).normalize() });
+});
+rig.add(boxGroup);
+
+/* ---------- Mode 3: containment cage + external controls ---------- */
+const cageGroup = new THREE.Group();
+const cageGeo = new THREE.IcosahedronGeometry(2.0, 1);
+const cageMat = new THREE.MeshBasicMaterial({ color: 0xc98a1a, wireframe: true, transparent: true, opacity: 0 });
+const cage = new THREE.Mesh(cageGeo, cageMat);
+cageGroup.add(cage);
+rig.add(cageGroup);
+
+const CONTROL_LABELS = ["IDENTITY", "PERMISSIONS", "LOGGING", "AUDITOR", "KILL SWITCH", "BOUNDARY"];
+const controlGroup = new THREE.Group();
+const controlLineMat = new THREE.LineBasicMaterial({ color: 0x1f4d57, transparent: true, opacity: 0 });
+const controlNodeMat = new THREE.MeshBasicMaterial({ color: 0xc98a1a, transparent: true, opacity: 0 });
+const controlNodes = [];
+
+for (let i = 0; i < 6; i++) {
+  const angle = (i / 6) * Math.PI * 2;
+  const tilt = (i % 2 === 0) ? 0.5 : -0.5;
+  const dir = new THREE.Vector3(Math.cos(angle), tilt, Math.sin(angle)).normalize();
+  const pos = dir.clone().multiplyScalar(3.6);
+
+  const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), pos]);
+  const line = new THREE.Line(lineGeo, controlLineMat);
+  controlGroup.add(line);
+
+  const nodeGeo = new THREE.SphereGeometry(0.09, 12, 12);
+  const node = new THREE.Mesh(nodeGeo, controlNodeMat);
+  node.position.copy(pos);
+  controlGroup.add(node);
+
+  controlNodes.push({ mesh: node, label: CONTROL_LABELS[i], el: makeLabel(CONTROL_LABELS[i], 'control') });
+}
+rig.add(controlGroup);
+
+/* ===================== HTML label helpers ===================== */
+function makeLabel(text, kind){
+  const el = document.createElement('div');
+  el.className = `label3d mono ${kind}`;
+  el.textContent = text;
+  stage.appendChild(el);
+  return el;
+}
+
+function projectLabel(worldVec, el){
+  const v = worldVec.clone().project(camera);
+  const rect = stage.getBoundingClientRect();
+  const x = (v.x * 0.5 + 0.5) * rect.width;
+  const y = (-v.y * 0.5 + 0.5) * rect.height;
+  const inView = v.z < 1 && x > -40 && x < rect.width + 40 && y > -10 && y < rect.height + 40;
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+  return inView;
+}
+
+/* ===================== Mode / state machine ===================== */
+const MODES = {
+  1: {
+    amp: 1.6,
+    core: new THREE.Color(0xd8381f), rim: new THREE.Color(0xff8a6b),
+    tendrils: 1, boxes: 0, cage: 0, controls: 0,
+    status: 'UNCONTAINED'
+  },
+  2: {
+    amp: 0.65,
+    core: new THREE.Color(0x6b6558), rim: new THREE.Color(0x9a9586),
+    tendrils: 0, boxes: 1, cage: 0, controls: 0,
+    status: 'OPAQUE \u00D7 OPAQUE'
+  },
+  3: {
+    amp: 0.22,
+    core: new THREE.Color(0x1f4d57), rim: new THREE.Color(0xc98a1a),
+    tendrils: 0, boxes: 0, cage: 1, controls: 1,
+    status: 'CONTAINED'
+  }
+};
+
+let currentMode = 1;
+let killSwitchActive = false;
+
+// live lerped values
+const live = {
+  amp: MODES[1].amp,
+  core: MODES[1].core.clone(),
+  rim: MODES[1].rim.clone(),
+  tendrils: 1, boxes: 0, cage: 0, controls: 0
+};
+
+function targetFor(){
+  if (killSwitchActive) {
+    return { ...MODES[3], amp: 0.02, status: 'HALTED \u00B7 SAFE' };
+  }
+  return MODES[currentMode];
+}
+
+function setActiveButton(){
+  document.querySelectorAll('.controls button[data-mode]').forEach(b => {
+    b.classList.toggle('active', Number(b.dataset.mode) === currentMode && !killSwitchActive);
+  });
+}
+
+const statusReadout = document.getElementById('statusReadout');
+const statusMode = document.getElementById('statusMode');
+const statusVal = document.getElementById('statusVal');
+
+function updateStatusText(){
+  const t = targetFor();
+  statusMode.textContent = killSwitchActive ? '--' : `0${currentMode}`;
+  statusVal.textContent = t.status;
+  statusReadout.classList.remove('contained', 'halted');
+  if (killSwitchActive) statusReadout.classList.add('halted');
+  else if (currentMode === 3) statusReadout.classList.add('contained');
+}
+
+document.getElementById('btnMode1').addEventListener('click', () => { currentMode = 1; killSwitchActive = false; setActiveButton(); updateStatusText(); });
+document.getElementById('btnMode2').addEventListener('click', () => { currentMode = 2; killSwitchActive = false; setActiveButton(); updateStatusText(); });
+document.getElementById('btnMode3').addEventListener('click', () => { currentMode = 3; killSwitchActive = false; setActiveButton(); updateStatusText(); });
+
+const overlayFlash = document.getElementById('overlayFlash');
+document.getElementById('btnKill').addEventListener('click', () => {
+  killSwitchActive = true;
+  currentMode = 3;
+  setActiveButton();
+  updateStatusText();
+  overlayFlash.classList.remove('active');
+  // force reflow to restart animation
+  void overlayFlash.offsetWidth;
+  overlayFlash.classList.add('active');
+});
+
+setActiveButton();
+updateStatusText();
+
+/* ===================== Resize handling ===================== */
+function resize(){
+  const rect = stage.getBoundingClientRect();
+  const w = Math.max(1, rect.width);
+  const h = Math.max(1, rect.height);
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+const ro = new ResizeObserver(resize);
+ro.observe(stage);
+resize();
+
+/* ===================== Animate ===================== */
+const clock = new THREE.Clock();
+const LERP = 0.045;
+
+function lerpColor(c, target, t){ c.lerp(target, t); return c; }
+
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  const t = clock.getElapsedTime();
+
+  const target = targetFor();
+
+  live.amp += (target.amp - live.amp) * LERP;
+  lerpColor(live.core, target.core, LERP);
+  lerpColor(live.rim, target.rim, LERP);
+  live.tendrils += (target.tendrils - live.tendrils) * LERP;
+  live.boxes    += (target.boxes    - live.boxes)    * LERP;
+  live.cage     += (target.cage     - live.cage)     * LERP;
+  live.controls += (target.controls - live.controls) * LERP;
+
+  coreMat.uniforms.uTime.value = t;
+  coreMat.uniforms.uAmp.value = live.amp;
+  coreMat.uniforms.uCore.value.copy(live.core);
+  coreMat.uniforms.uRim.value.copy(live.rim);
+
+  tendrilMat.opacity = live.tendrils;
+  dataNodeMat.opacity = live.tendrils;
+  tendrilGroup.visible = live.tendrils > 0.01;
+
+  boxMat.opacity = live.boxes * 0.4;
+  boxGroup.visible = live.boxes > 0.01;
+  boxMeshes.forEach(b => {
+    b.mesh.rotateOnAxis(b.axis, b.speed * dt);
+  });
+
+  cageMat.opacity = live.cage * 0.9;
+  cageGroup.visible = live.cage > 0.01;
+  cageGroup.rotation.y += 0.12 * dt;
+  cageGroup.rotation.x += 0.05 * dt;
+
+  controlLineMat.opacity = live.controls * 0.7;
+  controlNodeMat.opacity = live.controls;
+  controlGroup.visible = live.controls > 0.01;
+
+  rig.rotation.y += 0.09 * dt;
+  rig.rotation.x = Math.sin(t * 0.15) * 0.08;
+
+  // project labels
+  const showData = live.tendrils > 0.3;
+  dataNodes.forEach(d => {
+    const wp = d.mesh.getWorldPosition(new THREE.Vector3());
+    const inView = projectLabel(wp, d.el);
+    d.el.classList.toggle('visible', showData && inView);
+  });
+
+  const showControls = live.controls > 0.3;
+  controlNodes.forEach(c => {
+    const wp = c.mesh.getWorldPosition(new THREE.Vector3());
+    const inView = projectLabel(wp, c.el);
+    c.el.classList.toggle('visible', showControls && inView);
+  });
+
+  renderer.render(scene, camera);
+}
+animate();
+</script>
+
+</body>
+</html>
